@@ -444,12 +444,27 @@ open class CropViewController: UIViewController, TOCropViewControllerDelegate {
         fatalError("init(coder:) has not been implemented")
     }
     
+    let resetButton: UIButton = {
+        let button = UIButton()
+        button.setTitle("Reset", for: .normal)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        return button
+    }()
+    
     open override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
         
         // Defer adding the view until we're about to be presented
         if toCropViewController.view.superview == nil {
             view.addSubview(toCropViewController.view)
+        }
+        
+        TransformableService.shared.setupToolbar(inCropVC: self)
+        TransformableService.shared.addConstraintToResetButton(inView: view)
+        TransformableService.shared.resetTapped = {
+            self.resetCropViewLayout()
         }
     }
     

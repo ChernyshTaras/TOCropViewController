@@ -24,6 +24,7 @@ class ViewController: UIViewController, CropViewControllerDelegate, UIImagePicke
         let cropController = CropViewController(croppingStyle: croppingStyle, image: image)
         cropController.delegate = self
         
+        TransformableService.shared.setupToolbar(inCropVC: cropController)
         // Uncomment this if you wish to provide extra instructions via a title label
         //cropController.title = "Crop Image"
     
