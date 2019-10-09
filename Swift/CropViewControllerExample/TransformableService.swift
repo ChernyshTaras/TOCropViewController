@@ -62,7 +62,6 @@ public class TransformableService {
         /// 'cancelButton' for CropVC
         vc.toolbar.doneTextButton.setTitleColor(white, for: .normal)
         
-        
         vc.toolbar.clampButton.setImage(UIImage(named: "ic_ mirrore_white"), for: .normal)
         vc.toolbar.rotateButton.setImage(UIImage(named: "ic_rotate_white"), for: .normal)
         vc.toolbar.rotateClockwiseButton?.setImage(UIImage(named: "ic_frame_white"), for: .normal)
@@ -70,8 +69,11 @@ public class TransformableService {
         vc.doneButtonTitle = "Cancel"
         vc.cancelButtonTitle = "Done"
         vc.resetButtonHidden = true
+    }
     
-        
+    func setupCropVC(inCropVC vc: CropViewController) {
+        /// container view doesn't have dark style
+         vc.cropView.translucencyAlwaysHidden = true
     }
     
     
@@ -84,7 +86,7 @@ public class TransformableService {
                                                toItem: view,
                                                attribute: .top,
                                                multiplier: 1,
-                                               constant: 12)
+                                               constant: 32)
         let rightConstraint = NSLayoutConstraint(item: resetButton,
                                                  attribute: .leading,
                                                  relatedBy: .equal,
