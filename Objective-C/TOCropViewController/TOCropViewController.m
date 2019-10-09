@@ -123,12 +123,12 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     
     // Set up the toolbar button actions
     __weak typeof(self) weakSelf = self;
-    self.toolbar.doneButtonTapped   = ^{ [weakSelf cancelButtonTapped]; };
+    self.toolbar.doneButtonTapped  = ^{ [weakSelf cancelButtonTapped]; };
     self.toolbar.cancelButtonTapped = ^{ [weakSelf doneButtonTapped]; };
     self.toolbar.resetButtonTapped = ^{ [weakSelf resetCropViewLayout]; };
-    self.toolbar.clampButtonTapped = ^{ [weakSelf showAspectRatioDialog]; };
+    self.toolbar.clampButtonTapped = ^{ [weakSelf rotateCropViewClockwise]; };
     self.toolbar.rotateCounterclockwiseButtonTapped = ^{ [weakSelf rotateCropViewCounterclockwise]; };
-    self.toolbar.rotateClockwiseButtonTapped        = ^{ [weakSelf rotateCropViewClockwise]; };
+    self.toolbar.rotateClockwiseButtonTapped = ^{ [weakSelf showAspectRatioDialog]; };
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -1081,7 +1081,8 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
 - (void)setAspectRatioLockEnabled:(BOOL)aspectRatioLockEnabled
 {
-    self.toolbar.clampButtonGlowing = aspectRatioLockEnabled;
+    /// highlight clamt button if it pressed
+    self.toolbar.clampButtonGlowing = NO;//aspectRatioLockEnabled;
     self.cropView.aspectRatioLockEnabled = aspectRatioLockEnabled;
     if (!self.aspectRatioPickerButtonHidden) {
         self.aspectRatioPickerButtonHidden = (aspectRatioLockEnabled && self.resetAspectRatioEnabled == NO);

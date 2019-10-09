@@ -55,12 +55,23 @@ public class TransformableService {
         
         let yellow = TransformableService.shared.hexStringToUIColor(hex: "#CBB147")
         let white = TransformableService.shared.hexStringToUIColor(hex: "#FFFFFF")
+        
+        /// 'doneButton' for CropVC
         vc.toolbar.cancelTextButton.setTitleColor(yellow, for: .normal)
+        
+        /// 'cancelButton' for CropVC
         vc.toolbar.doneTextButton.setTitleColor(white, for: .normal)
+        
+        
+        vc.toolbar.clampButton.setImage(UIImage(named: "ic_ mirrore_white"), for: .normal)
+        vc.toolbar.rotateButton.setImage(UIImage(named: "ic_rotate_white"), for: .normal)
+        vc.toolbar.rotateClockwiseButton?.setImage(UIImage(named: "ic_frame_white"), for: .normal)
         
         vc.doneButtonTitle = "Cancel"
         vc.cancelButtonTitle = "Done"
         vc.resetButtonHidden = true
+    
+        
     }
     
     
