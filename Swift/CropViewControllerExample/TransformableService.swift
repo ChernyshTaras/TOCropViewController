@@ -60,6 +60,7 @@ public class TransformableService {
         
         vc.doneButtonTitle = "Cancel"
         vc.cancelButtonTitle = "Done"
+        vc.resetButtonHidden = true
     }
     
     
