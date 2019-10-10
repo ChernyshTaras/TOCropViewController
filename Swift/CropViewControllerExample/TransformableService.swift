@@ -17,8 +17,10 @@ public class TransformableService {
     lazy var resetButton: UIButton = {
         let button = UIButton()
         button.setTitle("Reset", for: .normal)
+        button.setTitleColor(.gray, for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.addTarget(self, action: #selector(tappedResetButton), for: .touchUpInside)
+        button.isEnabled = false
         return button
     }()
     

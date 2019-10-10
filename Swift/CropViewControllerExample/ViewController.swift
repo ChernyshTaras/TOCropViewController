@@ -23,6 +23,7 @@ class ViewController: UIViewController, CropViewControllerDelegate, UIImagePicke
         
         let cropController = CropViewController(croppingStyle: croppingStyle, image: image)
         cropController.delegate = self
+        cropController.cropView.delegate = self
         
         TransformableService.shared.setupToolbar(inCropVC: cropController)
         // Uncomment this if you wish to provide extra instructions via a title label
@@ -164,6 +165,7 @@ class ViewController: UIViewController, CropViewControllerDelegate, UIImagePicke
         // When tapping the image view, restore the image to the previous cropping state
         let cropViewController = CropViewController(croppingStyle: self.croppingStyle, image: self.image!)
         cropViewController.delegate = self
+        cropViewController.cropView.delegate = self
         let viewFrame = view.convert(imageView.frame, to: navigationController!.view)
         
         cropViewController.presentAnimatedFrom(self,
@@ -218,3 +220,17 @@ class ViewController: UIViewController, CropViewControllerDelegate, UIImagePicke
     }
 }
 
+// MARK: -
+extension ViewController: TOCropViewDelegate {
+    func cropViewDidBecomeResettable(_ cropView: TOCropView) {
+        TransformableService.shared.resetButton.isEnabled = true
+        TransformableService.shared.resetButton.setTitleColor(.white, for: .normal)
+    }
+    
+    func cropViewDidBecomeNonResettable(_ cropView: TOCropView) {
+        TransformableService.shared.resetButton.isEnabled = false
+        TransformableService.shared.resetButton.setTitleColor(.gray, for: .normal)
+    }
+    
+    
+}

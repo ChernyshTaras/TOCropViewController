@@ -126,7 +126,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.toolbar.doneButtonTapped  = ^{ [weakSelf cancelButtonTapped]; };
     self.toolbar.cancelButtonTapped = ^{ [weakSelf doneButtonTapped]; };
     self.toolbar.resetButtonTapped = ^{ [weakSelf resetCropViewLayout]; };
-    self.toolbar.clampButtonTapped = ^{ [weakSelf rotateCropViewClockwise]; };
+    self.toolbar.clampButtonTapped = ^{ [weakSelf flipXCropView]; };
     self.toolbar.rotateCounterclockwiseButtonTapped = ^{ [weakSelf rotateCropViewCounterclockwise]; };
     self.toolbar.rotateClockwiseButtonTapped = ^{ [weakSelf showAspectRatioDialog]; };
 }
@@ -895,6 +895,11 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
             [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
         }
     }
+}
+
+- (void)flipXCropView
+{
+    [self.cropView flipXImageAnimated:YES];
 }
 
 - (void)doneButtonTapped
