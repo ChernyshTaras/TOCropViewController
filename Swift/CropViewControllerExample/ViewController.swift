@@ -47,6 +47,7 @@ class ViewController: UIViewController, CropViewControllerDelegate, UIImagePicke
     
         //cropController.doneButtonTitle = "Title"
         //cropController.cancelButtonTitle = "Title"
+        cropController.aspectRatioLockDimensionSwapEnabled = true
         
         self.image = image
         

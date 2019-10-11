@@ -1764,8 +1764,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     //Cancel any pending resizing timers
     if (self.resetTimer) {
         [self cancelResetTimer];
-        [self setEditing:NO];
-        
+        [self setEditing:NO resetCropBox:YES animated:NO];
         self.cropBoxLastEditedAngle = self.angle;
         [self captureStateForImageRotation];
     }
@@ -1872,10 +1871,16 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
             
             self.translucencyView.alpha = 1.0f;
             
+            self.backgroundContainerView.alpha = 1.0f;
+            self.gridOverlayView.alpha = 1.0f;
+            
             [UIView animateWithDuration:0.45f animations:^{
                 snapshotView.alpha = 0.0f;
                 self.backgroundContainerView.alpha = 1.0f;
                 self.gridOverlayView.alpha = 1.0f;
+                
+                [self setAspectRatio: self.imageSize animated:animated];
+                
             } completion:^(BOOL complete) {
                 self.rotateAnimationInProgress = NO;
                 [snapshotView removeFromSuperview];
