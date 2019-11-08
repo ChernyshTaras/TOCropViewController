@@ -114,6 +114,9 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 
 @property (nonatomic, assign) CGAffineTransform savedXAffineTransform;
 
+/* Is image flipped by x axis. */
+@property (nonatomic, assign) BOOL flipped;
+
 @end
 
 @implementation TOCropView
@@ -249,6 +252,8 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     self.gridPanGestureRecognizer.delegate = self;
     [self.scrollView.panGestureRecognizer requireGestureRecognizerToFail:self.gridPanGestureRecognizer];
     [self addGestureRecognizer:self.gridPanGestureRecognizer];
+    
+    self.flipped = NO;
 }
 
 #pragma mark - View Layout -
@@ -1557,12 +1562,10 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         case -270:  angleInRadians = -(M_PI + M_PI_2);  break;
         default:                                        break;
     }
-    
     // Set up the transformation matrix for the rotation
-    CGAffineTransform rotation = CGAffineTransformRotate(CGAffineTransformIdentity, angleInRadians);
+    CGAffineTransform rotation = CGAffineTransformRotate(self.savedXAffineTransform, clockwise ? M_PI_2 : -M_PI_2);
     self.savedXAffineTransform = rotation;
     self.imageTransform = rotation;
-    
     //Work out how much we'll need to scale everything to fit to the new rotation
     CGRect contentBounds = self.contentBounds;
     CGRect cropBoxFrame = self.cropBoxFrame;
@@ -1623,13 +1626,19 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     cropTargetPoint.y *= scale;
     
     //swap the target dimensions to match a 90 degree rotation (clockwise or counterclockwise)
-    CGFloat swap = cropTargetPoint.x;
+    CGFloat swapX = cropTargetPoint.x;
+    CGFloat swapY = cropTargetPoint.y;
     if (clockwise) {
-        cropTargetPoint.x = self.scrollView.contentSize.width - cropTargetPoint.y;
-        cropTargetPoint.y = swap;
+        cropTargetPoint.x = self.scrollView.contentSize.width - swapY;
+        cropTargetPoint.y = swapX;
     } else {
-        cropTargetPoint.x = cropTargetPoint.y;
-        cropTargetPoint.y = self.scrollView.contentSize.height - swap;
+        if (!self.flipped) {
+            cropTargetPoint.x = swapY;
+            cropTargetPoint.y = self.scrollView.contentSize.height - swapX;
+        } else {
+            cropTargetPoint.x = self.scrollView.contentSize.width - swapY;
+            cropTargetPoint.y = swapX;
+        }
     }
     
     //reapply the translated scroll offset to the scroll view
@@ -1651,52 +1660,52 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     //If we're animated, play an animation of the snapshot view rotating,
     //then fade it out over the live content
-    if (animated) {
-        snapshotView.center = (CGPoint){CGRectGetMidX(contentBounds), CGRectGetMidY(contentBounds)};
-        [self addSubview:snapshotView];
-        
-        self.backgroundContainerView.hidden = YES;
-        self.foregroundContainerView.hidden = YES;
-        self.translucencyView.hidden = YES;
-        self.gridOverlayView.hidden = YES;
-        
-        [UIView animateWithDuration:0.45f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
-            CGAffineTransform transform = CGAffineTransformRotate(CGAffineTransformIdentity, clockwise ? M_PI_2 : -M_PI_2);
-            transform = CGAffineTransformScale(transform, scale, scale);
-            snapshotView.transform = transform;
-        } completion:^(BOOL complete) {
-            self.backgroundContainerView.hidden = NO;
-            self.foregroundContainerView.hidden = NO;
-            self.translucencyView.hidden = self.translucencyAlwaysHidden;
-            self.gridOverlayView.hidden = NO;
-            
-            self.backgroundContainerView.alpha = 0.0f;
-            self.gridOverlayView.alpha = 0.0f;
-            
-            self.translucencyView.alpha = 1.0f;
-            
-            [UIView animateWithDuration:0.45f animations:^{
-                snapshotView.alpha = 0.0f;
-                self.backgroundContainerView.alpha = 1.0f;
-                self.gridOverlayView.alpha = 1.0f;
-            } completion:^(BOOL complete) {
-                self.rotateAnimationInProgress = NO;
-                [snapshotView removeFromSuperview];
-                
-                // If the aspect ratio lock is not enabled, allow a swap
-                // If the aspect ratio lock is on, allow a aspect ratio swap
-                // only if the allowDimensionSwap option is specified.
-                BOOL aspectRatioCanSwapDimensions = !self.aspectRatioLockEnabled ||
-                (self.aspectRatioLockEnabled && self.aspectRatioLockDimensionSwapEnabled);
-                
-                if (!aspectRatioCanSwapDimensions) {
-                    //This will animate the aspect ratio back to the desired locked ratio after the image is rotated.
-                    [self setAspectRatio:self.aspectRatio animated:animated];
-                }
-            }];
-        }];
-    }
-    
+//    if (animated) {
+//        snapshotView.center = (CGPoint){CGRectGetMidX(contentBounds), CGRectGetMidY(contentBounds)};
+//        [self addSubview:snapshotView];
+//
+//        self.backgroundContainerView.hidden = YES;
+//        self.foregroundContainerView.hidden = YES;
+//        self.translucencyView.hidden = YES;
+//        self.gridOverlayView.hidden = YES;
+//
+//        [UIView animateWithDuration:0.45f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+//            CGAffineTransform transform = CGAffineTransformRotate(self.savedXAffineTransform, clockwise ? M_PI_2 : -M_PI_2);
+//            transform = CGAffineTransformScale(transform, scale, scale);
+//            snapshotView.transform = transform;
+//        } completion:^(BOOL complete) {
+//            self.backgroundContainerView.hidden = NO;
+//            self.foregroundContainerView.hidden = NO;
+//            self.translucencyView.hidden = self.translucencyAlwaysHidden;
+//            self.gridOverlayView.hidden = NO;
+//
+//            self.backgroundContainerView.alpha = 0.0f;
+//            self.gridOverlayView.alpha = 0.0f;
+//
+//            self.translucencyView.alpha = 1.0f;
+//
+//            [UIView animateWithDuration:0.45f animations:^{
+//                snapshotView.alpha = 0.0f;
+//                self.backgroundContainerView.alpha = 1.0f;
+//                self.gridOverlayView.alpha = 1.0f;
+//            } completion:^(BOOL complete) {
+//                self.rotateAnimationInProgress = NO;
+//                [snapshotView removeFromSuperview];
+//
+//                // If the aspect ratio lock is not enabled, allow a swap
+//                // If the aspect ratio lock is on, allow a aspect ratio swap
+//                // only if the allowDimensionSwap option is specified.
+//                BOOL aspectRatioCanSwapDimensions = !self.aspectRatioLockEnabled ||
+//                (self.aspectRatioLockEnabled && self.aspectRatioLockDimensionSwapEnabled);
+//
+//                if (!aspectRatioCanSwapDimensions) {
+//                    //This will animate the aspect ratio back to the desired locked ratio after the image is rotated.
+//                    [self setAspectRatio:self.aspectRatio animated:animated];
+//                }
+//            }];
+//        }];
+//    }
+    self.rotateAnimationInProgress = NO;
     [self checkForCanReset];
 }
 
@@ -1768,24 +1777,31 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         self.cropBoxLastEditedAngle = self.angle;
         [self captureStateForImageRotation];
     }
-    
     BOOL newFlipX = !self.flipX;
     
     _flipX = newFlipX;
     // Set up the transformation matrix for the rotation
-    CGAffineTransform rotation = CGAffineTransformScale(self.savedXAffineTransform, 1, -1);
+    CGAffineTransform rotation;
+    if ((copysign(self.savedXAffineTransform.b, self.savedXAffineTransform.a) == 1) ||
+        (copysign(self.savedXAffineTransform.b, self.savedXAffineTransform.a) == -1)) {
+            rotation = CGAffineTransformScale(self.savedXAffineTransform, -1, 1);
+        } else {
+            rotation = CGAffineTransformScale(self.savedXAffineTransform, 1, -1);
+        }
+    
     self.savedXAffineTransform = rotation;
     self.imageTransform = rotation;
+    self.flipped = !self.flipped;
     //Work out how much we'll need to scale everything to fit to the new rotation
-    CGRect contentBounds = self.contentBounds;
+//    CGRect contentBounds = self.contentBounds;
     CGRect cropBoxFrame = self.cropBoxFrame;
     
     //If we're animated, generate a snapshot view that we'll animate in place of the real view
-    UIView *snapshotView = nil;
-    if (animated) {
-        snapshotView = [self.foregroundContainerView snapshotViewAfterScreenUpdates:NO];
-        self.rotateAnimationInProgress = YES;
-    }
+//    UIView *snapshotView = nil;
+//    if (animated) {
+//        snapshotView = [self.foregroundContainerView snapshotViewAfterScreenUpdates:NO];
+//        self.rotateAnimationInProgress = YES;
+//    }
     
     //Rotate the background image view, inside its container view
     self.backgroundImageView.transform = rotation;
@@ -1803,44 +1819,44 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     //If we're animated, play an animation of the snapshot view rotating,
     //then fade it out over the live content
-    if (animated) {
-        snapshotView.center = (CGPoint){CGRectGetMidX(contentBounds), CGRectGetMidY(contentBounds)};
-        [self addSubview:snapshotView];
-        
-        self.backgroundContainerView.hidden = YES;
-        self.foregroundContainerView.hidden = YES;
-        self.translucencyView.hidden = YES;
-        self.gridOverlayView.hidden = YES;
-        snapshotView.transform = CGAffineTransformIdentity;
-        [UIView animateWithDuration:0.45f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
-            CGAffineTransform transform = CGAffineTransformScale(CGAffineTransformIdentity, 1, -1);
-            snapshotView.transform = transform;
-        } completion:^(BOOL complete) {
-            self.backgroundContainerView.hidden = NO;
-            self.foregroundContainerView.hidden = NO;
-            self.translucencyView.hidden = NO;
-            self.gridOverlayView.hidden = NO;
-            
-            self.backgroundContainerView.alpha = 0.0f;
-            self.gridOverlayView.alpha = 0.0f;
-            
-            self.translucencyView.alpha = 1.0f;
-            
-            self.backgroundContainerView.alpha = 1.0f;
-            self.gridOverlayView.alpha = 1.0f;
-            
-            [UIView animateWithDuration:0.45f animations:^{
-                snapshotView.alpha = 0.0f;
-                self.backgroundContainerView.alpha = 1.0f;
-                self.gridOverlayView.alpha = 1.0f;
-//                [self setAspectRatio: self.imageSize animated:animated];
-
-            } completion:^(BOOL complete) {
-                self.rotateAnimationInProgress = NO;
-                [snapshotView removeFromSuperview];
-            }];
-        }];
-    }
+//    if (animated) {
+//        snapshotView.center = (CGPoint){CGRectGetMidX(contentBounds), CGRectGetMidY(contentBounds)};
+//        [self addSubview:snapshotView];
+//
+//        self.backgroundContainerView.hidden = YES;
+//        self.foregroundContainerView.hidden = YES;
+//        self.translucencyView.hidden = YES;
+//        self.gridOverlayView.hidden = YES;
+//        snapshotView.transform = CGAffineTransformIdentity;
+//        [UIView animateWithDuration:0.45f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+//            CGAffineTransform transform = CGAffineTransformScale(CGAffineTransformIdentity, 1, -1);
+//            snapshotView.transform = transform;
+//        } completion:^(BOOL complete) {
+//            self.backgroundContainerView.hidden = NO;
+//            self.foregroundContainerView.hidden = NO;
+//            self.translucencyView.hidden = NO;
+//            self.gridOverlayView.hidden = NO;
+//
+//            self.backgroundContainerView.alpha = 0.0f;
+//            self.gridOverlayView.alpha = 0.0f;
+//
+//            self.translucencyView.alpha = 1.0f;
+//
+//            self.backgroundContainerView.alpha = 1.0f;
+//            self.gridOverlayView.alpha = 1.0f;
+//
+//            [UIView animateWithDuration:0.45f animations:^{
+//                snapshotView.alpha = 0.0f;
+//                self.backgroundContainerView.alpha = 1.0f;
+//                self.gridOverlayView.alpha = 1.0f;
+////                [self setAspectRatio: self.imageSize animated:animated];
+//
+//            } completion:^(BOOL complete) {
+//                self.rotateAnimationInProgress = NO;
+//                [snapshotView removeFromSuperview];
+//            }];
+//        }];
+//    }
     
     [self checkForCanReset];
 }
