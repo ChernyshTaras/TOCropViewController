@@ -185,7 +185,6 @@ The minimum croping aspect ratio. If set, user is prevented from setting croppin
 @property (nonatomic, assign) BOOL translucencyAlwaysHidden;
 
 @property (nonatomic, assign) CGAffineTransform imageTransform;
-@property (nonatomic, assign) BOOL flipX;
 
 /**
  Flips the entire canvas around X-axis

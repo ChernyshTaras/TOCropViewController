@@ -81,14 +81,18 @@ public class TransformableService {
     
     func addConstraintToResetButton(inView view: UIView) {
         view.addSubview(resetButton)
-        
+        var topSpace: CGFloat = 0
+        if #available(iOS 11.0, *) {
+            topSpace = UIApplication.shared.keyWindow?.safeAreaInsets.top ?? 0
+        }
         let topConstraint = NSLayoutConstraint(item: resetButton,
                                                attribute: .top,
                                                relatedBy: .equal,
                                                toItem: view,
                                                attribute: .top,
                                                multiplier: 1,
-                                               constant: 32)
+                                               constant: topSpace + 4)
+
         let rightConstraint = NSLayoutConstraint(item: resetButton,
                                                  attribute: .leading,
                                                  relatedBy: .equal,
@@ -105,6 +109,7 @@ public class TransformableService {
                                                   constant: 20)
         
         view.addConstraints([topConstraint, rightConstraint, heightConstraint])
+        
     }
 }
 

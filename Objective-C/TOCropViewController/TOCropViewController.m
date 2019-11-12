@@ -446,11 +446,11 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         [self.cropView moveCroppedContentToCenterAnimated:NO];
     }
 
-    [UIView performWithoutAnimation:^{
+    //[UIView performWithoutAnimation:^{
         self.toolbar.frame = [self frameForToolbarWithVerticalLayout:self.verticalLayout];
         [self adjustToolbarInsets];
         [self.toolbar setNeedsLayout];
-    }];
+    //}];
 }
 
 #pragma mark - Rotation Handling -
@@ -1240,7 +1240,8 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 {
     UIEdgeInsets insets = UIEdgeInsetsZero;
     if (@available(iOS 11.0, *)) {
-        insets = self.view.safeAreaInsets;
+        
+        insets = [[UIApplication sharedApplication] keyWindow].safeAreaInsets;
 
         // Since iPhone X insets are always 44, check if this is merely
         // accounting for a non-X status bar and cancel it
