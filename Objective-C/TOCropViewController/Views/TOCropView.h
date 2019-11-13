@@ -193,6 +193,13 @@ The minimum croping aspect ratio. If set, user is prevented from setting croppin
  */
 - (void)flipXImageAnimated:(BOOL)animated;
 
+/**
+ Flips the entire canvas around Y-axis
+ 
+ @param animated Whether the transition is animated
+ */
+- (void)flipYImageAnimated:(BOOL)animated;
+
 ///*
 // if YES it will always show grid
 // if NO it will never show grid

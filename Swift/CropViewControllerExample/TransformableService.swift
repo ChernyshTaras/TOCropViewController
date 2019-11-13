@@ -67,6 +67,7 @@ public class TransformableService {
         vc.toolbar.clampButton.setImage(UIImage(named: "ic_ mirrore_white"), for: .normal)
         vc.toolbar.rotateButton.setImage(UIImage(named: "ic_rotate_white"), for: .normal)
         vc.toolbar.rotateClockwiseButton?.setImage(UIImage(named: "ic_frame_white"), for: .normal)
+        vc.toolbar.flipYButton.setImage(UIImage(named: "ic_mirrore_hor"), for: .normal)
         
         vc.doneButtonTitle = "Cancel"
         vc.cancelButtonTitle = "Done"

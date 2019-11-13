@@ -1555,7 +1555,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     //Work out the new angle, and wrap around once we exceed 360s
     NSInteger newAngle = self.angle;
     
-    newAngle = newAngle + 90;
+    newAngle = newAngle - 90;
     if (newAngle <= -360) {
         newAngle = newAngle + 360;
     }
@@ -1566,11 +1566,12 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     _angle = newAngle;
 
     // Set up the transformation matrix for the rotation
-    CGAffineTransform rotation = CGAffineTransformRotate(self.savedXAffineTransform, self.flippedX ? -M_PI_2: M_PI_2);
+    CGAffineTransform rotation = CGAffineTransformRotate(self.savedXAffineTransform, self.flippedX ? M_PI_2: -M_PI_2);
     if (self.flippedY) {
-        rotation = CGAffineTransformRotate(rotation, M_PI);
+        rotation = CGAffineTransformRotate(rotation, -M_PI);
     }
     self.savedXAffineTransform = rotation;
+    self.imageTransform = rotation;
     //Work out how much we'll need to scale everything to fit to the new rotation
     CGRect contentBounds = self.contentBounds;
     CGRect cropBoxFrame = self.cropBoxFrame;
@@ -1632,15 +1633,9 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     //swap the target dimensions to match a 90 degree rotation (clockwise or counterclockwise)
     CGFloat swapX = cropTargetPoint.x;
-    CGFloat swapY = cropTargetPoint.y;
-
-    if (self.flippedX) {
-        cropTargetPoint.x = self.scrollView.contentSize.width - swapY;
-        cropTargetPoint.y = swapX;
-    } else {
-        cropTargetPoint.x = self.scrollView.contentSize.width - swapY;
-        cropTargetPoint.y = swapX;
-    }
+    
+    cropTargetPoint.x = cropTargetPoint.y;
+    cropTargetPoint.y = self.scrollView.contentSize.height - swapX;
     
     //reapply the translated scroll offset to the scroll view
     CGPoint midPoint = {CGRectGetMidX(newCropFrame), CGRectGetMidY(newCropFrame)};
@@ -1671,7 +1666,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         self.gridOverlayView.hidden = YES;
         snapshotView.transform = CGAffineTransformIdentity;
         [UIView animateWithDuration:0.45f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
-            snapshotView.transform = CGAffineTransformScale(CGAffineTransformRotate(CGAffineTransformIdentity, M_PI_2), scale, scale);
+            snapshotView.transform = CGAffineTransformScale(CGAffineTransformRotate(CGAffineTransformIdentity, -M_PI_2), scale, scale);
         } completion:^(BOOL complete) {
             self.backgroundContainerView.hidden = NO;
             self.foregroundContainerView.hidden = NO;
@@ -1817,6 +1812,95 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         snapshotView.transform = CGAffineTransformIdentity;
         [UIView animateWithDuration:0.45f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
             CGAffineTransform transform = CGAffineTransformScale(CGAffineTransformIdentity, 1, -1);
+            snapshotView.transform = transform;
+        } completion:^(BOOL complete) {
+            self.backgroundContainerView.hidden = NO;
+            self.foregroundContainerView.hidden = NO;
+            self.translucencyView.hidden = NO;
+            self.gridOverlayView.hidden = NO;
+            self.backgroundContainerView.alpha = 0.0f;
+            self.gridOverlayView.alpha = 0.0f;
+            self.translucencyView.alpha = 1.0f;
+            self.backgroundContainerView.alpha = 1.0f;
+            self.gridOverlayView.alpha = 1.0f;
+            [UIView animateWithDuration:0.45f animations:^{
+                snapshotView.alpha = 0.0f;
+                self.backgroundContainerView.alpha = 1.0f;
+                self.gridOverlayView.alpha = 1.0f;
+            } completion:^(BOOL complete) {
+                self.rotateAnimationInProgress = NO;
+                [snapshotView removeFromSuperview];
+            }];
+        }];
+    }
+    
+    [self checkForCanReset];
+}
+
+- (void)flipYImageAnimated:(BOOL)animated {
+    //Only allow one rotation animation at a time
+    if (self.rotateAnimationInProgress)
+        return;
+    
+    //Cancel any pending resizing timers
+    if (self.resetTimer) {
+        [self cancelResetTimer];
+        [self setEditing:NO resetCropBox:YES animated:NO];
+        self.cropBoxLastEditedAngle = self.angle;
+        [self captureStateForImageRotation];
+    }
+
+    
+    // Set up the transformation matrix for the rotation
+    CGAffineTransform rotation;
+    if (self.angle % 180 == 0) {
+        self.flippedY = !self.flippedY;
+        rotation = CGAffineTransformScale(self.backgroundImageView.transform, -1, 1);
+        CGAffineTransform savedTransform = CGAffineTransformScale(self.savedXAffineTransform, -1, 1);
+        self.savedXAffineTransform = savedTransform;
+        self.imageTransform = savedTransform;
+    } else {
+        self.flippedX = !self.flippedX;
+        rotation = CGAffineTransformScale(self.backgroundImageView.transform, 1, -1);
+        CGAffineTransform savedTransform = CGAffineTransformScale(self.savedXAffineTransform, 1, -1);
+        self.savedXAffineTransform = savedTransform;
+        self.imageTransform = savedTransform;
+    }
+    
+    //Work out how much we'll need to scale everything to fit to the new rotation
+    CGRect cropBoxFrame = self.cropBoxFrame;
+    
+    //If we're animated, generate a snapshot view that we'll animate in place of the real view
+    UIView *snapshotView = nil;
+    if (animated) {
+        snapshotView = [self.foregroundContainerView snapshotViewAfterScreenUpdates:NO];
+        self.rotateAnimationInProgress = YES;
+    }
+    
+    //Rotate the background image view, inside its container view
+    self.backgroundImageView.transform = rotation;
+    
+    //Rotate the foreground image view to match
+    self.foregroundContainerView.transform = CGAffineTransformIdentity;
+    self.foregroundImageView.transform = rotation;
+    
+    if (@available(iOS 11.0, *)) {
+        self.scrollView.contentOffset = CGPointMake(self.scrollView.contentSize.width - (self.scrollView.contentOffset.x + self.scrollView.adjustedContentInset.left + cropBoxFrame.size.width) - self.scrollView.adjustedContentInset.left,
+                                                    self.scrollView.contentOffset.y);
+    }
+    //If we're animated, play an animation of the snapshot view rotating,
+    //then fade it out over the live content
+    if (animated) {
+        snapshotView.center = (CGPoint){CGRectGetMidX(self.contentBounds), CGRectGetMidY(self.contentBounds)};
+        [self addSubview:snapshotView];
+
+        self.backgroundContainerView.hidden = YES;
+        self.foregroundContainerView.hidden = YES;
+        self.translucencyView.hidden = YES;
+        self.gridOverlayView.hidden = YES;
+        snapshotView.transform = CGAffineTransformIdentity;
+        [UIView animateWithDuration:0.45f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+            CGAffineTransform transform = CGAffineTransformScale(CGAffineTransformIdentity, -1, 1);
             snapshotView.transform = transform;
         } completion:^(BOOL complete) {
             self.backgroundContainerView.hidden = NO;

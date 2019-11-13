@@ -110,15 +110,13 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     // Set up view controller properties
     self.transitioningDelegate = self;
     self.view.backgroundColor = self.cropView.backgroundColor;
-    
-    BOOL circularMode = (self.croppingStyle == TOCropViewCroppingStyleCircular);
 
     // Layout the views initially
     self.cropView.frame = [self frameForCropViewWithVerticalLayout:self.verticalLayout];
     self.toolbar.frame = [self frameForToolbarWithVerticalLayout:self.verticalLayout];
 
     // Set up toolbar default behaviour
-    self.toolbar.clampButtonHidden = self.aspectRatioPickerButtonHidden || circularMode;
+    self.toolbar.clampButtonHidden = self.aspectRatioPickerButtonHidden;
     self.toolbar.rotateClockwiseButtonHidden = self.rotateClockwiseButtonHidden;
     
     // Set up the toolbar button actions
@@ -127,6 +125,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.toolbar.cancelButtonTapped = ^{ [weakSelf doneButtonTapped]; };
     self.toolbar.resetButtonTapped = ^{ [weakSelf resetCropViewLayout]; };
     self.toolbar.clampButtonTapped = ^{ [weakSelf flipXCropView]; };
+    self.toolbar.flipYButtonTapped = ^{ [weakSelf flipYCropView]; };
     self.toolbar.rotateCounterclockwiseButtonTapped = ^{ [weakSelf rotateCropViewCounterclockwise]; };
     self.toolbar.rotateClockwiseButtonTapped = ^{ [weakSelf showAspectRatioDialog]; };
 }
@@ -902,6 +901,11 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     [self.cropView flipXImageAnimated:YES];
 }
 
+- (void)flipYCropView
+{
+    [self.cropView flipYImageAnimated:YES];
+}
+
 - (void)doneButtonTapped
 {
     CGRect cropFrame = self.cropView.imageCropFrame;
@@ -975,8 +979,34 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
     //If cropping circular and the circular generation delegate/block is implemented, call it
     if (self.croppingStyle == TOCropViewCroppingStyleCircular && (isCircularImageDelegateAvailable || isCircularImageCallbackAvailable)) {
-        UIImage *image = [self.image croppedImageWithFrame:cropFrame angle:angle circularClip:YES];
+        UIImage *image;
         
+//        CIImage* coreImage = self.image.CIImage;
+//
+//        if (!coreImage) {
+//            coreImage = [CIImage imageWithCGImage:self.image.CGImage];
+//        }
+//
+//        coreImage = [coreImage imageByApplyingTransform: self.cropView.imageTransform];
+//        image = [[UIImage imageWithCIImage:coreImage] croppedImageWithFrame:cropFrame angle:0 circularClip:YES];
+//
+//        CALayer *imageLayer = [CALayer layer];
+//        imageLayer.frame = CGRectMake(0, 0, self.cropView.cropBoxFrame.size.width, self.cropView.cropBoxFrame.size.height);
+//        imageLayer.contents = (id) image.CGImage;
+//
+//        imageLayer.masksToBounds = YES;
+//        imageLayer.cornerRadius = radius;
+        
+        UIGraphicsBeginImageContext(self.cropView.cropBoxFrame.size);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        [self.cropView.layer renderInContext:context];
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        
+        
+        
+        //image = [image croppedImageWithFrame:self.cropView.cropBoxFrame angle:0 circularClip:YES];
+        //[(UIImageView*)[[self.cropView.foregroundContainerView subviews] firstObject] snapshotViewAfterScreenUpdates:NO]
         //Dispatch on the next run-loop so the animation isn't interuppted by the crop operation
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.03f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             if (isCircularImageDelegateAvailable) {

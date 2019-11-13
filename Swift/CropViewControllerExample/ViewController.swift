@@ -145,7 +145,7 @@ class ViewController: UIViewController, CropViewControllerDelegate, UIImagePicke
             
             let imagePicker = UIImagePickerController()
             imagePicker.modalPresentationStyle = .popover
-            imagePicker.popoverPresentationController?.barButtonItem = (sender as! UIBarButtonItem)
+            //imagePicker.popoverPresentationController?.barButtonItem = (sender as! UIBarButtonItem)
             imagePicker.preferredContentSize = CGSize(width: 320, height: 568)
             imagePicker.sourceType = .photoLibrary
             imagePicker.allowsEditing = false
