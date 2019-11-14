@@ -981,32 +981,16 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     if (self.croppingStyle == TOCropViewCroppingStyleCircular && (isCircularImageDelegateAvailable || isCircularImageCallbackAvailable)) {
         UIImage *image;
         
-//        CIImage* coreImage = self.image.CIImage;
-//
-//        if (!coreImage) {
-//            coreImage = [CIImage imageWithCGImage:self.image.CGImage];
-//        }
-//
-//        coreImage = [coreImage imageByApplyingTransform: self.cropView.imageTransform];
-//        image = [[UIImage imageWithCIImage:coreImage] croppedImageWithFrame:cropFrame angle:0 circularClip:YES];
-//
-//        CALayer *imageLayer = [CALayer layer];
-//        imageLayer.frame = CGRectMake(0, 0, self.cropView.cropBoxFrame.size.width, self.cropView.cropBoxFrame.size.height);
-//        imageLayer.contents = (id) image.CGImage;
-//
-//        imageLayer.masksToBounds = YES;
-//        imageLayer.cornerRadius = radius;
-        
         UIGraphicsBeginImageContext(self.cropView.cropBoxFrame.size);
         CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextAddEllipseInRect(context, (CGRect){CGPointZero, self.cropView.cropBoxFrame.size});
+        CGContextClip(context);
+        CGContextTranslateCTM(context, -self.cropView.cropBoxFrame.origin.x, -self.cropView.cropBoxFrame.origin.y);
         [self.cropView.layer renderInContext:context];
         image = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
+        //image = [image roundImage];
         
-        
-        
-        //image = [image croppedImageWithFrame:self.cropView.cropBoxFrame angle:0 circularClip:YES];
-        //[(UIImageView*)[[self.cropView.foregroundContainerView subviews] firstObject] snapshotViewAfterScreenUpdates:NO]
         //Dispatch on the next run-loop so the animation isn't interuppted by the crop operation
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.03f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             if (isCircularImageDelegateAvailable) {
@@ -1022,12 +1006,13 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     //If the delegate/block that requires the specific cropped image is provided, call it
     else if (isDidCropToImageDelegateAvailable || isDidCropToImageCallbackAvailable) {
         UIImage *image = nil;
-        if (angle == 0 && CGRectEqualToRect(cropFrame, (CGRect){CGPointZero, self.image.size})) {
-            image = self.image;
-        }
-        else {
-            image = [self.image croppedImageWithFrame:cropFrame angle:angle circularClip:NO];
-        }
+
+        UIGraphicsBeginImageContext(self.cropView.cropBoxFrame.size);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextTranslateCTM(context, -self.cropView.cropBoxFrame.origin.x, -self.cropView.cropBoxFrame.origin.y);
+        [self.cropView.layer renderInContext:context];
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
         
         //Dispatch on the next run-loop so the animation isn't interuppted by the crop operation
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.03f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
